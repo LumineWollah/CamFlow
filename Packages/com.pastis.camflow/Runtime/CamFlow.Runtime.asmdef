@@ -1,7 +1,9 @@
 {
   "name": "Pastis.CamFlow.Runtime",
   "rootNamespace": "Pastis.CamFlow",
-  "references": [],
+  "references": [
+    "Unity.InputSystem"
+  ],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
