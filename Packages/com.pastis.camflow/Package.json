@@ -1,0 +1,20 @@
+{
+  "name": "com.pastis.camflow",
+  "version": "0.1.0",
+  "displayName": "CamFlow - Unity Camera Motion Toolkit",
+  "description": "Modular 3D camera controller with bindable inputs, cinematic smoothing, target follow, and optional bounds.",
+  "unity": "2021.3",
+  "author": {
+    "name": "Pastis"
+  },
+  "dependencies": {
+    "com.unity.inputsystem": "1.7.0"
+  },
+  "samples": [
+    {
+      "displayName": "Basic Rig",
+      "description": "Minimal setup instructions for CamFlow.",
+      "path": "Samples~/BasicRig"
+    }
+  ]
+}
