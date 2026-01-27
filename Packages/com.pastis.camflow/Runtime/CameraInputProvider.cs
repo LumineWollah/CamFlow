@@ -12,21 +12,32 @@ namespace Pastis.CamFlow
     {
         [Header("Bindings (defaults)")]
         [SerializeField] private string moveComposite = "2DVector";
-        [SerializeField] private string moveUpBinding = "<Keyboard>/w";
-        [SerializeField] private string moveDownBinding = "<Keyboard>/s";
+
+        // NOTE: These are "Forward/Backward" but the Input System composite uses labels Up/Down.
+        [SerializeField] private string moveForwardBinding = "<Keyboard>/w";
+        [SerializeField] private string moveBackwardBinding = "<Keyboard>/s";
         [SerializeField] private string moveLeftBinding = "<Keyboard>/a";
         [SerializeField] private string moveRightBinding = "<Keyboard>/d";
 
+        [Header("Vertical Movement (World Up/Down)")]
+        // As requested: Q goes UP, E goes DOWN.
+        [SerializeField] private string moveUpBinding = "<Keyboard>/q";
+        [SerializeField] private string moveDownBinding = "<Keyboard>/e";
+
+        [Header("Look / Zoom")]
         [SerializeField] private string lookBinding = "<Mouse>/delta";
         [SerializeField] private string zoomBinding = "<Mouse>/scroll";
+        [SerializeField] private string enableLookButton = "<Mouse>/rightButton";
 
+        [Header("Speed Modifiers")]
         [SerializeField] private string fastBinding = "<Keyboard>/leftShift";
         [SerializeField] private string slowBinding = "<Keyboard>/leftCtrl";
 
+        [Header("Toggles")]
         [SerializeField] private string toggleCinematicBinding = "<Keyboard>/c";
-        [SerializeField] private string enableLookButton = "<Mouse>/rightButton";
 
-        private InputAction moveAction;
+        private InputAction moveAction;            // 2D (x=strafe, y=forward)
+        private InputAction verticalMoveAction;    // 1D (up/down world)
         private InputAction lookAction;
         private InputAction zoomAction;
         private InputAction fastAction;
@@ -36,7 +47,16 @@ namespace Pastis.CamFlow
 
         private bool togglePressedBuffered;
 
+        /// <summary>
+        /// X = strafe, Y = forward (not world up/down).
+        /// </summary>
         public Vector2 Move => moveAction?.ReadValue<Vector2>() ?? Vector2.zero;
+
+        /// <summary>
+        /// +1 when pressing Q (up), -1 when pressing E (down).
+        /// </summary>
+        public float VerticalMove => verticalMoveAction?.ReadValue<float>() ?? 0f;
+
         public Vector2 LookDelta => (lookEnableAction != null && lookEnableAction.IsPressed())
             ? (lookAction?.ReadValue<Vector2>() ?? Vector2.zero)
             : Vector2.zero;
@@ -62,12 +82,19 @@ namespace Pastis.CamFlow
             if (moveAction != null) return;
 
             // MOVE (WASD 2D composite)
+            // Composite uses labels Up/Down, but semantically that's Forward/Backward for our camera.
             moveAction = new InputAction("CamFlow.Move", InputActionType.Value);
             var composite = moveAction.AddCompositeBinding(moveComposite);
-            composite.With("Up", moveUpBinding);
-            composite.With("Down", moveDownBinding);
+            composite.With("Up", moveForwardBinding);
+            composite.With("Down", moveBackwardBinding);
             composite.With("Left", moveLeftBinding);
             composite.With("Right", moveRightBinding);
+
+            // VERTICAL MOVE (Q/E 1D axis): Q = up (+), E = down (-)
+            verticalMoveAction = new InputAction("CamFlow.VerticalMove", InputActionType.Value);
+            verticalMoveAction.AddCompositeBinding("1DAxis")
+                .With("Positive", moveUpBinding)
+                .With("Negative", moveDownBinding);
 
             // LOOK (mouse delta), gated by RMB (default)
             lookAction = new InputAction("CamFlow.Look", InputActionType.Value, lookBinding);
@@ -88,6 +115,7 @@ namespace Pastis.CamFlow
         private void EnableAll()
         {
             moveAction?.Enable();
+            verticalMoveAction?.Enable();
             lookAction?.Enable();
             zoomAction?.Enable();
             fastAction?.Enable();
@@ -99,6 +127,7 @@ namespace Pastis.CamFlow
         private void DisableAll()
         {
             moveAction?.Disable();
+            verticalMoveAction?.Disable();
             lookAction?.Disable();
             zoomAction?.Disable();
             fastAction?.Disable();
@@ -116,6 +145,7 @@ namespace Pastis.CamFlow
 
         // Optional helpers if you want to expose actions for UI rebinding later.
         public InputAction GetMoveAction() => moveAction;
+        public InputAction GetVerticalMoveAction() => verticalMoveAction;
         public InputAction GetLookAction() => lookAction;
         public InputAction GetZoomAction() => zoomAction;
         public InputAction GetToggleCinematicAction() => toggleCinematicAction;

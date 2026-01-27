@@ -20,6 +20,9 @@ namespace Pastis.CamFlow
         [SerializeField] private LayerMask followLayerMask = ~0; // everything by default
         [SerializeField] private float maxPickDistance = 1000f;
         [SerializeField] private bool stopFollowOnMoveInput = true;
+        
+        private int ignoreReleaseFrames = 0;
+
 
         private void Reset()
         {
@@ -54,7 +57,7 @@ namespace Pastis.CamFlow
             bounds ??= GetComponent<CameraBounds>();
         }
 
-        private void Update()
+        private void LateUpdate()
         {
             if (input == null || motor == null) return;
 
@@ -68,19 +71,26 @@ namespace Pastis.CamFlow
             // Click-to-follow selection
             if (clickToFollowEnabled && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
             {
+                Debug.Log("[CamFlow] Trying to pick follow target.");
                 TryPickFollowTarget();
+                Debug.Log("[CamFlow] Pick follow target complete.");
             }
 
             // Release follow as soon as movement is pressed
-            if (stopFollowOnMoveInput && follower != null && follower.Enabled && input.Move.sqrMagnitude > 0.0001f)
+            if (ignoreReleaseFrames > 0)
+            {
+                ignoreReleaseFrames--;
+            }
+            else if (stopFollowOnMoveInput && follower != null && follower.Enabled && input.Move.sqrMagnitude > 0.0001f)
             {
                 follower.ClearTargetAndDisable();
             }
 
+
             // Main behavior: Follow overrides Free
             if (follower != null && follower.Enabled && follower.Target != null)
             {
-                follower.TickFollow(Time.deltaTime, motor);
+                follower.TickFollow(Time.deltaTime, motor, input);
             }
             else
             {
@@ -96,6 +106,8 @@ namespace Pastis.CamFlow
 
         private void TryPickFollowTarget()
         {
+            ignoreReleaseFrames = 2;
+
             Camera cam = motor.TargetCamera != null ? motor.TargetCamera : Camera.main;
             if (cam == null) return;
 
@@ -118,6 +130,51 @@ namespace Pastis.CamFlow
             follower.SetTarget(t);
             follower.SetEnabled(true);
         }
+
+        // private void TryPickFollowTarget()
+        // {
+        //     Camera cam = motor != null && motor.TargetCamera != null ? motor.TargetCamera : Camera.main;
+        //     Debug.Log($"[CamFlow] Pick: cam={(cam ? cam.name : "null")} motorCam={(motor != null && motor.TargetCamera != null ? motor.TargetCamera.name : "null")} main={(Camera.main ? Camera.main.name : "null")}");
+
+        //     if (cam == null)
+        //     {
+        //         Debug.LogWarning("[CamFlow] Pick aborted: no camera for raycast.");
+        //         return;
+        //     }
+
+        //     Vector2 mousePos = Mouse.current.position.ReadValue();
+        //     Ray ray = cam.ScreenPointToRay(mousePos);
+        //     Debug.Log($"[CamFlow] Pick: mousePos={mousePos} rayOrigin={ray.origin} rayDir={ray.direction}");
+
+        //     if (!Physics.Raycast(ray, out RaycastHit hit, maxPickDistance, followLayerMask, QueryTriggerInteraction.Ignore))
+        //     {
+        //         Debug.LogWarning("[CamFlow] Pick miss: raycast hit nothing.");
+        //         return;
+        //     }
+
+        //     Debug.Log($"[CamFlow] Pick hit: {hit.collider.name} at {hit.point} (root={hit.collider.transform.root.name})");
+
+        //     CamFlowFollowable followable = hit.collider.GetComponentInParent<CamFlowFollowable>();
+        //     if (followable == null)
+        //     {
+        //         Debug.LogWarning("[CamFlow] Pick rejected: hit object has no CamFlowFollowable in parents.");
+        //         return;
+        //     }
+
+        //     if (follower == null)
+        //     {
+        //         Debug.LogWarning("[CamFlow] Pick failed: no CameraTargetFollower on rig / reference not wired.");
+        //         return;
+        //     }
+
+        //     Transform t = followable.FollowTransform != null ? followable.FollowTransform : followable.transform;
+
+        //     follower.SetTarget(t);
+        //     follower.SetEnabled(true);
+
+        //     Debug.Log($"[CamFlow] Pick success: now following {t.name}");
+        // }
+
 
         public void SetTarget(Transform target)
         {

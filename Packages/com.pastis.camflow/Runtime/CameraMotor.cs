@@ -69,6 +69,7 @@ namespace Pastis.CamFlow
         {
             // Translation in local XZ plane (world up)
             Vector2 move = input.Move;
+float vertical = input.VerticalMove;
             float speed = moveSpeed;
             if (input.Fast) speed *= fastMultiplier;
             if (input.Slow) speed *= slowMultiplier;
@@ -77,6 +78,7 @@ namespace Pastis.CamFlow
             Vector3 forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
 
             desiredPosition += (right * move.x + forward * move.y) * (speed * dt);
+            desiredPosition += Vector3.up * (vertical * speed * dt); 
 
             // Rotation
             Vector2 look = input.LookDelta;
