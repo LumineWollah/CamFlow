@@ -45,5 +45,11 @@ namespace Pastis.CamFlow
 
             motor.TickFollow(dt, desiredPos, desiredRot);
         }
+        
+        public void ClearTargetAndDisable()
+        {
+            target = null;
+            enabledFollow = false;
+        }
     }
 }

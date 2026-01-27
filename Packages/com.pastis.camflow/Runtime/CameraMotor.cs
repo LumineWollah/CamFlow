@@ -43,6 +43,8 @@ namespace Pastis.CamFlow
 
         private float desiredFov;
         private float fovVelocity;
+        
+        public Camera TargetCamera => targetCamera;
 
         private void Reset()
         {
@@ -119,16 +121,10 @@ namespace Pastis.CamFlow
 
             transform.position = Vector3.SmoothDamp(transform.position, desiredPosition, ref positionVelocity, positionSmoothTime, Mathf.Infinity, dt);
 
-            // Smooth rotation by smoothing yaw/pitch angles
-            Vector3 euler = transform.rotation.eulerAngles;
-            float currentYaw = euler.y;
-            float currentPitch = NormalizePitch(euler.x);
+            // Smooth rotation directly towards desiredRotation (works for both Free and Follow)
+            float rotT = 1f - Mathf.Exp(-dt / Mathf.Max(0.0001f, rotationSmoothTime));
+            transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, rotT);
 
-            float newYaw = Mathf.SmoothDampAngle(currentYaw, desiredYaw, ref rotationVelocity, rotationSmoothTime, Mathf.Infinity, dt);
-            // reuse velocity for simplicity; acceptable for v1. You can split yaw/pitch later.
-            float newPitch = Mathf.Lerp(currentPitch, desiredPitch, 1f - Mathf.Exp(-dt / Mathf.Max(0.0001f, rotationSmoothTime)));
-
-            transform.rotation = Quaternion.Euler(newPitch, newYaw, 0f);
 
             if (targetCamera != null)
             {
