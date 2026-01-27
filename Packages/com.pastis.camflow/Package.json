@@ -12,9 +12,10 @@
   },
   "samples": [
     {
-      "displayName": "Basic Rig",
+      "displayName": "Demo Scene",
       "description": "Minimal setup instructions for CamFlow.",
-      "path": "Samples~/BasicRig"
+      "path": "Assets/Scenes/SampleScene.unity"
     }
-  ]
+  ],
+  "documentationUrl": "https://mon-url-de-doc.com"
 }
