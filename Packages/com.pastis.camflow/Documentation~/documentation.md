@@ -4,7 +4,16 @@
 
 ---
 
-## 📦 Installation
+## Contenu du package (Package contents)
+
+Le package contient les éléments suivants :
+* **Runtime** : Scripts principaux (`CameraController`, `CameraMotor`, etc.).
+* **Documentation~** : Ce fichier de documentation.
+* **Samples~** : Scènes d'exemples prêtes à l'emploi.
+
+---
+
+## Instructions d'installation
 
 Ce package s'installe via le Unity Package Manager (UPM).
 
@@ -18,106 +27,63 @@ Ce package s'installe via le Unity Package Manager (UPM).
 4. Pointez vers le fichier `package.json` à la racine du dossier `com.pastis.camflow`.
 5. *(Alternativement, si c'est un package git)* : Sélectionnez "Add package from git URL..." et entrez l'URL du dépôt.
 
-> **Dépendance** : Ce package dépend de `com.unity.inputsystem`. Unity l'installera automatiquement s'il n'est pas présent.
+---
+
+## Prérequis (Requirements)
+
+* **Unity Version** : 2021.3 ou supérieur recommandé.
+* **Dépendance** : Ce package dépend de `com.unity.inputsystem`. Unity l'installera automatiquement s'il n'est pas présent.
 
 ---
 
-## 🚀 Démarrage Rapide
+## Limitations
 
-1. **Créer un Rig Caméra** :
-   - Créez un objet vide nommé `CameraRig`.
-   - Placez votre `Main Camera` en tant qu'enfant de ce `CameraRig`.
-   - Réinitialisez la position de la caméra locale à `(0, 0, 0)` (ou ajustez selon vos besoins, par ex. reculez-la un peu).
-
-2. **Ajouter les composants** :
-   - Sélectionnez `CameraRig`.
-   - Ajoutez le composant `CameraController`.
-   <p align="center">
-      <img src="Images/camera_controller.png" width="500" alt="Camera Controller Inspector">
-      <br>
-      <em>Le composant principal CameraController</em>
-   </p>
-   - Unity ajoutera automatiquement les dépendances : `CameraMotor`, `CameraInputProvider`, `CameraTargetFollower`, et `CameraBounds`.
-   <img src="Images/demo_scene.png" width="100%" alt="Camera Motor"> | <img src="Images/camera_input_provider.png" width="25%" alt="Input Provider">
-   <img src="Images/camera_target_follower.png" width="35%" alt="Target Follower"> | <img src="Images/camera_bound.png" width="35%" alt="Camera Bounds">
-
-3. **Configurer** :
-   - Sur `CameraMotor`, assurez-vous que `Target Camera` pointe bien vers votre caméra enfant.
-   - Sur `CameraInputProvider`, les contrôles par défaut sont :
-     - **ZQSD / WASD** : Déplacement
-     - **Clic Droit + Souris** : Rotation (Yaw/Pitch)
-     - **Molette** : Zoom
-     - **Shift** : Accélérer
-     - **Ctrl** : Ralentir
-     - **C** : Basculer le mode Cinématique (lissage)
-
-4. **Jouer** : Lancez la scène. Vous pouvez maintenant voler librement.
+* **2D** : Conçu pour la 3D, le système n'est pas optimisé pour les vues orthographiques 2D.
+* **NavMesh** : Le système de limites (`CameraBounds`) utilise une simple boîte (AABB).
 
 ---
 
-## 🧩 Composants
+## Workflows (Démarrage Rapide)
 
-Voici le détail de chaque composant et ses paramètres.
+Suivez ces étapes pour configurer la caméra :
 
-### 1. CameraController
-Le "cerveau" du rig. C'est le composant principal à configurer. Il fait le lien entre les entrées, le moteur de mouvement et le suivi de cible.
+### 1. Créer un Rig Caméra
+- Créez un objet vide nommé `CameraRig`.
+- Placez votre `Main Camera` en tant qu'enfant de ce `CameraRig`.
+- Réinitialisez la position de la caméra locale à `(0, 0, 0)` (ou ajustez selon vos besoins).
 
-- **Cinematic Enabled** : Active ou désactive le lissage (smoothing) des mouvements pour un rendu plus fluide.
-- **Click To Follow Enabled** : Permet de cliquer sur un objet dans la scène (clic gauche) pour que la caméra le suive automatiquement.
-- **Stop Follow On Move Input** : Si coché, dès que l'utilisateur appuie sur une touche de déplacement (ZQSD), le suivi de cible s'arrête et la caméra repasse en mode libre.
+### 2. Ajouter les composants
+- Sélectionnez `CameraRig`.
+- Ajoutez le composant `CameraController`.
 
-### 2. CameraMotor
-Gère la physique et le mouvement de la caméra.
+<p align="center">
+    <img src="Images/camera_controller.png" width="500" alt="Camera Controller Inspector">
+    <br>
+    <em>Le composant principal CameraController</em>
+</p>
 
-- **Movement** : Vitesse de base, multiplicateurs pour le run (Shift) et le slow (Ctrl).
-- **Rotation** : Sensibilité de la souris et limites verticales (min/max Pitch).
-- **Zoom** : Vitesse du zoom et limites du champ de vision (FOV).
-- **Cinematic (Smoothing)** : Temps de lissage pour la position, la rotation et le zoom. Plus la valeur est élevée, plus le mouvement est "lourd" et fluide.
+- Unity ajoutera automatiquement les dépendances (`CameraMotor`, `CameraInputProvider`, `CameraTargetFollower`, `CameraBounds`).
 
-### 3. CameraTargetFollower
-Gère la logique de suivi d'une cible (Target).
+| **Camera Motor** & **Input Provider** |
+| :---: |
+| <img src="Images/demo_scene.png" width="100%" alt="Camera Motor"> <img src="Images/camera_input_provider.png" width="25%" alt="Input Provider"> |
 
-- **Offset** : Décalage de position par rapport à la cible suivie (ex: `(0, 10, -10)` pour une vue du dessus).
-- **Look At Target** : Si coché, la caméra s'orientera toujours vers la cible. Sinon, elle gardera sa rotation actuelle.
+| **Target Follower** & **Camera Bounds** |
+| :---: |
+| <img src="Images/camera_target_follower.png" width="35%" alt="Target Follower"> <img src="Images/camera_bound.png" width="35%" alt="Camera Bounds"> |
 
-### 4. CameraBounds
-Définit une zone de laquelle la caméra ne peut pas sortir.
+### 3. Configurer
+- Sur `CameraMotor`, assurez-vous que `Target Camera` pointe bien vers votre caméra enfant.
+- Sur `CameraInputProvider`, les contrôles par défaut sont déjà actifs.
 
-- **Enabled** : Active ou désactive les limites.
-- **Center / Size** : Définit la boîte (AABB) autorisée. Utile pour les jeux de stratégie (RTS) pour ne pas sortir de la carte.
-- *Astuce : Utilisez les Gizmos dans la vue Scene pour visualiser la boîte.*
-
-### 5. CameraInputProvider
-Gère les entrées (Input System).
-
-- Il expose les champs pour remapper les touches si besoin (ex: changer la touche de toggle cinématique).
-- Par défaut, il utilise le clavier et la souris.
-
-### 6. CamFlowFollowable
-Un script utilitaire à placer sur les objets de votre scène que vous voulez rendre "cliquables" pour le suivi caméra.
-
-- Ajoutez ce composant sur vos unités ou bâtiments.
-- **Follow Transform** : (Optionnel) Si vous voulez que la caméra vise une partie spécifique (ex: la tête) plutôt que le pivot de l'objet.
+### 4. Jouer
+Lancez la scène. Vous pouvez maintenant voler librement.
 
 ---
 
-## 🎮 Contrôles (Par défaut)
+## Sujets Avancés (Advanced Topics)
 
-| Action | Touche(s) |
-|Struture|Description|
-|---|---|
-| **Déplacement** | `W`, `A`, `S`, `D` (ou ZQSD selon layout) |
-| **Rotation** | Maintenir `Clic Droit` + Souris |
-| **Zoom** | Molette Souris |
-| **Vitesse Rapide** | Maintenir `Shift` |
-| **Vitesse Lente** | Maintenir `Ctrl` |
-| **Mode Cinématique** | `C` (Toggle) |
-| **Suivre une cible** | `Clic Gauche` sur un objet (avec `CamFlowFollowable`) |
-
----
-
-## 💻 Scripting API
-
+### Scripting API
 Vous pouvez piloter la caméra par code via le `CameraController`.
 
 ```csharp
@@ -132,10 +98,3 @@ camController.SetTarget(null);
 
 // Activer/Désactiver le mode cinématique
 camController.SetCinematic(true);
-```
-
-### Événements et Extension
-
-Le système est conçu pour être étendu.
-- **CameraMotor** expose des méthodes comme `TickFree` et `TickFollow` si vous voulez écrire votre propre logique de contrôle tout en gardant le moteur physique.
-- **CameraBounds** utilise une simple AABB pour l'instant mais peut être étendu pour des formes plus complexes.
