@@ -8,7 +8,9 @@
 
 Ce package s'installe via le Unity Package Manager (UPM).
 
-![Page d'installation]("Images\demo scene.png")
+<p align="center">
+  <img src="Images/demo_scene.png" width="600" alt="Page d'installation">
+</p>
 
 1. Ouvrez le **Package Manager** dans Unity (`Window > Package Manager`).
 2. Cliquez sur le bouton **+** en haut à gauche.
@@ -30,12 +32,14 @@ Ce package s'installe via le Unity Package Manager (UPM).
 2. **Ajouter les composants** :
    - Sélectionnez `CameraRig`.
    - Ajoutez le composant `CameraController`.
-   ![Camera Controller](Images/camera_controller.png)
+   <p align="center">
+      <img src="Images/camera_controller.png" width="500" alt="Camera Controller Inspector">
+      <br>
+      <em>Le composant principal CameraController</em>
+   </p>
    - Unity ajoutera automatiquement les dépendances : `CameraMotor`, `CameraInputProvider`, `CameraTargetFollower`, et `CameraBounds`.
-   ![CameraMotor](Images/demo_scene.png)
-   ![CameraInputProvider](Images/camera_input_provider.png)
-   ![CameraTargetFollower](Images/camera_target_follower.png)
-   ![CameraBound](Images/camera_bound.png)
+   <img src="Images/demo_scene.png" width="100%" alt="Camera Motor"> | <img src="Images/camera_input_provider.png" width="100%" alt="Input Provider"> |
+   <img src="Images/camera_target_follower.png" width="100%" alt="Target Follower"> | <img src="Images/camera_bound.png" width="100%" alt="Camera Bounds"> |   ![CameraTargetFollower](Images/camera_target_follower.png)
 
 3. **Configurer** :
    - Sur `CameraMotor`, assurez-vous que `Target Camera` pointe bien vers votre caméra enfant.
