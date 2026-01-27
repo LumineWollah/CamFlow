@@ -30,7 +30,7 @@ Ce package s'installe via le Unity Package Manager (UPM).
 2. **Ajouter les composants** :
    - Sélectionnez `CameraRig`.
    - Ajoutez le composant `CameraController`.
-   ![Camera Controller]("Images\camera_controller.png")
+   ![Camera Controller]("../Documentation~\Images\camera_controller.png")
    - Unity ajoutera automatiquement les dépendances : `CameraMotor`, `CameraInputProvider`, `CameraTargetFollower`, et `CameraBounds`.
    ![CameraMotor]("Images\demo_scene.png")
    ![CameraInputProvider]("Images\camera_input_provider.png")
