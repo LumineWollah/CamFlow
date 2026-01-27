@@ -38,8 +38,8 @@ Ce package s'installe via le Unity Package Manager (UPM).
       <em>Le composant principal CameraController</em>
    </p>
    - Unity ajoutera automatiquement les dépendances : `CameraMotor`, `CameraInputProvider`, `CameraTargetFollower`, et `CameraBounds`.
-   <img src="Images/demo_scene.png" width="100%" alt="Camera Motor"> | <img src="Images/camera_input_provider.png" width="100%" alt="Input Provider"> |
-   <img src="Images/camera_target_follower.png" width="100%" alt="Target Follower"> | <img src="Images/camera_bound.png" width="100%" alt="Camera Bounds"> |   ![CameraTargetFollower](Images/camera_target_follower.png)
+   <img src="Images/demo_scene.png" width="100%" alt="Camera Motor"> | <img src="Images/camera_input_provider.png" width="25%" alt="Input Provider"> |
+   <img src="Images/camera_target_follower.png" width="25%" alt="Target Follower"> | <img src="Images/camera_bound.png" width="25%" alt="Camera Bounds"> |   ![CameraTargetFollower](Images/camera_target_follower.png)
 
 3. **Configurer** :
    - Sur `CameraMotor`, assurez-vous que `Target Camera` pointe bien vers votre caméra enfant.
