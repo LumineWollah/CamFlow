@@ -150,7 +150,7 @@ namespace Pastis.CamFlow
             }
 
             // 6) Apply behavior: Follow overrides Free
-            if (follower != null && follower.Enabled && follower.Target != null)
+            if (follower != null && follower.Enabled && follower.HasAnyTarget)
             {
                 follower.TickFollow(Time.deltaTime, motor, cmd);
             }
@@ -197,6 +197,18 @@ namespace Pastis.CamFlow
             follower.SetEnabled(true);
 
             return true;
+        }
+
+        public void SetTargetGroup(CamFlowTargetGroup group)
+        {
+            if (follower == null) return;
+            follower.SetTargetGroup(group);
+        }
+
+        public void ClearTargetGroup()
+        {
+            if (follower == null) return;
+            follower.ClearTargetGroup();
         }
     }
 }

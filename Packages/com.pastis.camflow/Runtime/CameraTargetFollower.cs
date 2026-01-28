@@ -24,11 +24,19 @@ namespace Pastis.CamFlow
         [Tooltip("Default offset used to initialize orbit angles/distance.")]
         [SerializeField] private Vector3 defaultOffset = new Vector3(0f, 6f, -8f);
 
+        [SerializeField] private CamFlowTargetGroup targetGroup;
+        [SerializeField] private float groupPadding = 1.2f;
+        [SerializeField] private float minDistance = 5f;
+        [SerializeField] private float maxDistance = 100f;
+
+
         // Orbit state (around target)
         private float yaw;      // degrees
         private float pitch;    // degrees
         private float distance; // units
 
+        public bool HasAnyTarget =>
+            (target != null) || (targetGroup != null && targetGroup.IsValid);
         public bool Enabled => enabledFollow;
         public Transform Target => target;
 
@@ -84,26 +92,66 @@ namespace Pastis.CamFlow
         /// </summary>
         public void TickFollow(float dt, CameraMotor motor, in CameraCommand cmd)
         {
-            if (!enabledFollow || target == null) return;
+            if (!enabledFollow)
+                return;
 
+            Vector3 desiredPos;
+            Quaternion desiredRot;
+            float? desiredFov = null;
+
+            // ===== TARGET GROUP MODE =====
+            if (targetGroup != null && targetGroup.IsValid)
+            {
+                Bounds b = targetGroup.ComputeBounds();
+                Vector3 center = b.center;
+                float radius = b.extents.magnitude * groupPadding;
+
+                // Camera orientation: look at group center
+                desiredRot = Quaternion.LookRotation(center - motor.transform.position, Vector3.up);
+
+                // Distance so that the group fits in view
+                float fov = motor.TargetCamera.fieldOfView * Mathf.Deg2Rad;
+                float distance = radius / Mathf.Sin(fov * 0.5f);
+                distance = Mathf.Clamp(distance, minDistance, maxDistance);
+
+                desiredPos = center - desiredRot * Vector3.forward * distance;
+
+                motor.TickFollow(dt, desiredPos, desiredRot);
+                return;
+            }
+
+            // ===== SINGLE TARGET MODE (existing) =====
+            if (target == null)
+                return;
+
+            // Orbit input
             if (orbitEnabled)
             {
                 Vector2 look = cmd.lookDelta;
-                if (look.sqrMagnitude > 0.000001f)
-                {
-                    yaw += look.x * orbitYawSpeed;
-                    pitch -= look.y * orbitPitchSpeed;
-                    pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
-                }
+                yaw += look.x * orbitYawSpeed;
+                pitch -= look.y * orbitPitchSpeed;
+                pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
             }
 
-            Vector3 desiredPos = target.position + ComputeOrbitOffset();
+            desiredPos = target.position + ComputeOrbitOffset();
 
-            Quaternion desiredRot = lookAtTarget
-                ? Quaternion.LookRotation((target.position - desiredPos).normalized, Vector3.up)
+            desiredRot = lookAtTarget
+                ? Quaternion.LookRotation(target.position - desiredPos, Vector3.up)
                 : motor.transform.rotation;
 
-            motor.TickFollow(dt, desiredPos, desiredRot);
+            motor.TickFollow(dt, desiredPos, desiredRot, desiredFov);
+        }
+
+        public void SetTargetGroup(CamFlowTargetGroup group)
+        {
+            targetGroup = group;
+            target = null;
+            enabledFollow = group != null;
+        }
+
+        public void ClearTargetGroup()
+        {
+            targetGroup = null;
         }
     }
 }

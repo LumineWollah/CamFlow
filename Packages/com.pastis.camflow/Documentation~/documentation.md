@@ -106,6 +106,106 @@ Suivez ces étapes pour configurer la caméra :
 
 ---
 
+## Suivi de groupe de cibles (Target Group Following)
+
+CamFlow permet à la caméra de suivre **un groupe de cibles** plutôt qu’un seul objet.  
+Ce mode est particulièrement utile pour des jeux de stratégie, des escouades, ou toute situation où plusieurs entités doivent rester visibles simultanément.
+
+Contrairement au suivi classique, le suivi de groupe est **piloté uniquement via l’API** (pas de clic direct dans la scène pour le moment).
+
+---
+
+### CamFlowTargetGroup
+
+Le composant `CamFlowTargetGroup` définit un groupe de cibles à suivre.
+
+- Il contient une **liste dynamique de `Transform`**
+- La caméra se positionne et s’oriente automatiquement pour que **toutes les cibles soient visibles dans le champ de vision**
+- Les cibles peuvent être ajoutées ou retirées à l’exécution
+
+#### Mise en place
+
+1. Créer un GameObject vide dans la scène
+2. Ajouter le composant `CamFlowTargetGroup`
+3. Ajouter les `Transform` des objets à suivre dans la liste `Targets`
+
+---
+
+### Comportement de la caméra
+
+Lorsque la caméra suit un `CamFlowTargetGroup` :
+
+- Elle calcule un volume englobant toutes les cibles
+- Elle s’oriente vers le centre du groupe
+- Elle ajuste automatiquement sa distance (et/ou son cadrage) pour inclure toutes les cibles
+- Le comportement est mis à jour en temps réel si les cibles se déplacent
+
+Le suivi de groupe **prend le pas** sur :
+- le free-fly
+- le suivi d’une cible unique
+
+---
+
+### API – Activer / désactiver le suivi de groupe
+
+Le suivi de groupe est contrôlé via le `CameraController`.
+
+```csharp
+using Pastis.CamFlow;
+
+public class GroupCameraController : MonoBehaviour
+{
+    public CameraController cameraController;
+    public CamFlowTargetGroup targetGroup;
+
+    void Start()
+    {
+        // Activer le suivi du groupe
+        cameraController.SetTargetGroup(targetGroup);
+    }
+
+    void StopFollowing()
+    {
+        // Désactiver le suivi du groupe (retour au free-fly)
+        cameraController.ClearTargetGroup();
+    }
+}
+```
+
+### Intégration dans une scène de démo
+
+Dans les scènes d’exemple, le suivi de groupe peut être activé via une interface utilisateur afin de démontrer son intégration dans un contexte réel.
+
+- Un bouton UI déclenche l’appel à `SetTargetGroup(...)`
+- Un second clic sur le même bouton appelle `ClearTargetGroup()`
+- La caméra alterne ainsi dynamiquement entre :
+  - un mode libre (free-fly)
+  - un mode de suivi de groupe
+
+Ce mécanisme permet de visualiser facilement le comportement du système et de tester le suivi de groupe sans modifier le code principal de la caméra.
+
+---
+
+### Notes et limitations
+
+- Le suivi de groupe est actuellement **accessible uniquement via l’API**
+- Il n’est pas possible de sélectionner un groupe par clic dans la scène
+- Un seul groupe de cibles peut être suivi à la fois
+- Le suivi de groupe est compatible avec :
+  - le mode cinématique
+  - les limites de déplacement (`CameraBounds`)
+
+---
+
+### Cas d’usage typiques
+
+- Suivi d’une escouade ou d’un groupe d’unités
+- Vue tactique globale dans un jeu de stratégie
+- Caméra de spectateur
+- Outils internes d’édition ou de debug
+
+---
+
 ## Avancé : Virtualisation de la caméra
 
 CamFlow permet à des scripts externes de **remplacer le contrôle de la caméra**.
@@ -126,9 +226,72 @@ public interface ICamFlowDriver
 {
     bool TryGetCommand(out CameraCommand command);
 }
+```
+Si `TryGetCommand` retourne `true`, CamFlow utilise la commande fournie à la place des entrées joueur.
 
 ---
 
-## Cas d'usage (Use Cases)
+### Exemple de Driver
 
-- **
+```csharp
+using UnityEngine;
+using Pastis.CamFlow;
+
+public class MyDriver : MonoBehaviour, ICamFlowDriver
+{
+    public bool TryGetCommand(out CameraCommand command)
+    {
+        command = new CameraCommand
+        {
+            planarMove = new Vector2(0f, 1f),
+            verticalMove = 0f,
+            lookDelta = Vector2.zero,
+            zoomDelta = 0f,
+            fast = false,
+            slow = true,
+            toggleCinematic = false,
+            followTarget = null,
+            clearFollow = false
+        };
+
+        return true;
+    }
+}
+```
+
+---
+
+### Enregistrement du driver
+
+```csharp
+void OnEnable()
+{
+    var controller = FindObjectOfType<CameraController>();
+    controller?.SetDriver(this);
+}
+
+void OnDisable()
+{
+    controller?.ClearDriver();
+}
+```
+
+Un seul driver peut contrôler la caméra à un instant donné.
+
+---
+
+## Principes de conception
+
+- Flux clair : Input → Command → Motor
+- Logique de caméra déterministe et basée sur les frames
+- Les systèmes externes peuvent remplacer le contrôle en toute sécurité
+
+---
+
+## Résumé
+
+CamFlow fournit :
+- Une caméra libre de type RTS / free-fly
+- Un suivi de cible fluide avec orbit
+- Des limites de déplacement configurables
+- Un système de contrôle de caméra scriptable et extensible
