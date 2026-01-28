@@ -57,23 +57,19 @@ This package aims to provide a **standardized, modular, and reusable foundation*
 ## Core Features (MVP)
 | Features |
 | -------- |
-| Dynamic object tracking |
-| Defined movement area |
+| Free camera movement |
+| Target following |
+| Command camera system for advanced virtualization |
 | Smooth camera motion |
-| Bindable input keys |
 
 ---
 
 ## Secondary Features (Nice-to-have)
-- Presets using `ScriptableObject`
-- Edge scrolling (RTS-style)
-- Dead zone / soft follow
-- Simple obstacle collision handling
-- Gizmos (bounds, target, directions)
-- Events (OnTargetChanged, OnModeChanged…)
-- Optional bridge with Cinemachine
+- Defined movement area
+- Target group functionality
+- Zoom functionality
 
----
+--- 
 
 ## Non-Goals
 - Fully replacing Cinemachine  
@@ -102,11 +98,11 @@ This package aims to provide a **standardized, modular, and reusable foundation*
 ## Integration
 - Distributed via **Unity Package Manager** (Git URL)
 - `Runtime/`, `Editor/`, `Samples~` folders
-- **Camera Rig** prefab
-- Example scenes:
+- Example scene with:
   - Free Camera
   - Follow Camera
-  - RTS Camera
+  - Boundaries
+  - Camera Command Override example
 - “Quick Start” documentation (< 5 minutes)
 
 ---
@@ -139,4 +135,3 @@ This package aims to provide a **standardized, modular, and reusable foundation*
 - README and documentation
 - Example scenes
 - One-pager (this document)
-- Demo video or GIF (optional)

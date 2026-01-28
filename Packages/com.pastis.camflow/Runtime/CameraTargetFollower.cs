@@ -82,13 +82,13 @@ namespace Pastis.CamFlow
         /// <summary>
         /// Follow tick. If orbitEnabled, RMB drag (input.LookDelta) updates orbit yaw/pitch.
         /// </summary>
-        public void TickFollow(float dt, CameraMotor motor, CameraInputProvider input)
+        public void TickFollow(float dt, CameraMotor motor, in CameraCommand cmd)
         {
             if (!enabledFollow || target == null) return;
 
-            if (orbitEnabled && input != null)
+            if (orbitEnabled)
             {
-                Vector2 look = input.LookDelta; // already gated by RMB in your input provider
+                Vector2 look = cmd.lookDelta;
                 if (look.sqrMagnitude > 0.000001f)
                 {
                     yaw += look.x * orbitYawSpeed;
@@ -99,18 +99,9 @@ namespace Pastis.CamFlow
 
             Vector3 desiredPos = target.position + ComputeOrbitOffset();
 
-            Quaternion desiredRot;
-            if (lookAtTarget)
-            {
-                Vector3 dir = (target.position - desiredPos);
-                desiredRot = dir.sqrMagnitude > 0.0001f
-                    ? Quaternion.LookRotation(dir.normalized, Vector3.up)
-                    : motor.transform.rotation;
-            }
-            else
-            {
-                desiredRot = motor.transform.rotation;
-            }
+            Quaternion desiredRot = lookAtTarget
+                ? Quaternion.LookRotation((target.position - desiredPos).normalized, Vector3.up)
+                : motor.transform.rotation;
 
             motor.TickFollow(dt, desiredPos, desiredRot);
         }

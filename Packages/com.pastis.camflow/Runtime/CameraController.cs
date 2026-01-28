@@ -3,6 +3,10 @@ using UnityEngine.InputSystem;
 
 namespace Pastis.CamFlow
 {
+    /// <summary>
+    /// Orchestrates camera behavior by selecting a command source
+    /// (input provider or external driver) and applying it to the motor.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class CameraController : MonoBehaviour
     {
@@ -15,14 +19,21 @@ namespace Pastis.CamFlow
         [Header("Mode")]
         [SerializeField] private bool cinematicEnabled = true;
 
-        [Header("Selection / Follow")]
+        [Header("External Driver (optional)")]
+        [Tooltip("Optional driver assigned via Inspector (must implement ICamFlowDriver).")]
+        [SerializeField] private MonoBehaviour driverBehaviour;
+
+        [Header("Click To Follow")]
         [SerializeField] private bool clickToFollowEnabled = true;
-        [SerializeField] private LayerMask followLayerMask = ~0; // everything by default
+        [SerializeField] private LayerMask followLayerMask = ~0;
         [SerializeField] private float maxPickDistance = 1000f;
         [SerializeField] private bool stopFollowOnMoveInput = true;
-        
-        private int ignoreReleaseFrames = 0;
 
+        private ICamFlowDriver externalDriver;
+
+        // follow release guards
+        private int ignoreReleaseFrames = 0;
+        private Vector2 previousMove;
 
         private void Reset()
         {
@@ -41,6 +52,9 @@ namespace Pastis.CamFlow
             }
 
             motor.CinematicEnabled = cinematicEnabled;
+
+            if (driverBehaviour != null && driverBehaviour is ICamFlowDriver d)
+                externalDriver = d;
         }
 
         private void OnValidate()
@@ -57,141 +71,132 @@ namespace Pastis.CamFlow
             bounds ??= GetComponent<CameraBounds>();
         }
 
+        /// <summary>
+        /// Allows external scripts to take control of the camera.
+        /// </summary>
+        public void SetDriver(ICamFlowDriver driver)
+        {
+            externalDriver = driver;
+        }
+
+        public void ClearDriver()
+        {
+            externalDriver = null;
+        }
+
         private void LateUpdate()
         {
-            if (input == null || motor == null) return;
+            if (motor == null)
+                return;
 
-            // Toggle cinematic
-            if (input.ConsumeToggleCinematicPressed())
+            // 1) Click-to-follow selection (still allowed even with external driver)
+            if (clickToFollowEnabled &&
+                Mouse.current != null &&
+                Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                if (TryPickFollowTarget())
+                    ignoreReleaseFrames = 2;
+            }
+
+            // 2) Choose command source
+            CameraCommand cmd = CameraCommand.Empty;
+            bool hasExternal =
+                externalDriver != null &&
+                externalDriver.TryGetCommand(out cmd);
+
+            if (!hasExternal)
+            {
+                if (input == null) return;
+                cmd = input.ReadCommand();
+            }
+
+            // 3) Toggle cinematic
+            if (cmd.toggleCinematic)
             {
                 cinematicEnabled = !cinematicEnabled;
                 motor.CinematicEnabled = cinematicEnabled;
             }
 
-            // Click-to-follow selection
-            if (clickToFollowEnabled && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            // 4) Follow management (external or input driven)
+            if (follower != null)
             {
-                Debug.Log("[CamFlow] Trying to pick follow target.");
-                TryPickFollowTarget();
-                Debug.Log("[CamFlow] Pick follow target complete.");
+                if (cmd.clearFollow)
+                    follower.ClearTargetAndDisable();
+
+                if (cmd.followTarget != null)
+                {
+                    follower.SetTarget(cmd.followTarget);
+                    follower.SetEnabled(true);
+                }
             }
 
-            // Release follow as soon as movement is pressed
+            // 5) Release follow on movement (edge-triggered)
+            bool moveStartedThisFrame =
+                previousMove.sqrMagnitude <= 0.0001f &&
+                cmd.planarMove.sqrMagnitude > 0.0001f;
+
+            previousMove = cmd.planarMove;
+
             if (ignoreReleaseFrames > 0)
             {
                 ignoreReleaseFrames--;
             }
-            else if (stopFollowOnMoveInput && follower != null && follower.Enabled && input.Move.sqrMagnitude > 0.0001f)
+            else if (stopFollowOnMoveInput &&
+                     follower != null &&
+                     follower.Enabled &&
+                     moveStartedThisFrame)
             {
                 follower.ClearTargetAndDisable();
             }
 
-
-            // Main behavior: Follow overrides Free
+            // 6) Apply behavior: Follow overrides Free
             if (follower != null && follower.Enabled && follower.Target != null)
             {
-                follower.TickFollow(Time.deltaTime, motor, input);
+                follower.TickFollow(Time.deltaTime, motor, cmd);
             }
             else
             {
-                motor.TickFree(Time.deltaTime, input);
+                motor.TickFree(Time.deltaTime, cmd);
             }
 
-            // Optional bounds clamping
+            // 7) Bounds
             if (bounds != null && bounds.Enabled)
-            {
                 motor.ClampPosition(bounds);
-            }
         }
 
-        private void TryPickFollowTarget()
+        private bool TryPickFollowTarget()
         {
-            ignoreReleaseFrames = 2;
+            Camera cam =
+                motor.TargetCamera != null ? motor.TargetCamera : Camera.main;
 
-            Camera cam = motor.TargetCamera != null ? motor.TargetCamera : Camera.main;
-            if (cam == null) return;
+            if (cam == null)
+                return false;
 
             Ray ray = cam.ScreenPointToRay(Mouse.current.position.ReadValue());
-            if (!Physics.Raycast(ray, out RaycastHit hit, maxPickDistance, followLayerMask, QueryTriggerInteraction.Ignore))
-                return;
 
-            // Only follow objects that are explicitly taggéd by our component
-            CamFlowFollowable followable = hit.collider.GetComponentInParent<CamFlowFollowable>();
-            if (followable == null) return;
+            if (!Physics.Raycast(
+                    ray,
+                    out RaycastHit hit,
+                    maxPickDistance,
+                    followLayerMask,
+                    QueryTriggerInteraction.Ignore))
+                return false;
 
-            Transform t = followable.FollowTransform != null ? followable.FollowTransform : followable.transform;
+            CamFlowFollowable followable =
+                hit.collider.GetComponentInParent<CamFlowFollowable>();
 
-            if (follower == null)
-            {
-                Debug.LogWarning("[CamFlow] Click-to-follow is enabled but no CameraTargetFollower is on this rig.", this);
-                return;
-            }
+            if (followable == null || follower == null)
+                return false;
+
+            Transform t =
+                followable.FollowTransform != null
+                    ? followable.FollowTransform
+                    : followable.transform;
 
             follower.SetTarget(t);
             follower.SetEnabled(true);
-        }
 
-        // private void TryPickFollowTarget()
-        // {
-        //     Camera cam = motor != null && motor.TargetCamera != null ? motor.TargetCamera : Camera.main;
-        //     Debug.Log($"[CamFlow] Pick: cam={(cam ? cam.name : "null")} motorCam={(motor != null && motor.TargetCamera != null ? motor.TargetCamera.name : "null")} main={(Camera.main ? Camera.main.name : "null")}");
-
-        //     if (cam == null)
-        //     {
-        //         Debug.LogWarning("[CamFlow] Pick aborted: no camera for raycast.");
-        //         return;
-        //     }
-
-        //     Vector2 mousePos = Mouse.current.position.ReadValue();
-        //     Ray ray = cam.ScreenPointToRay(mousePos);
-        //     Debug.Log($"[CamFlow] Pick: mousePos={mousePos} rayOrigin={ray.origin} rayDir={ray.direction}");
-
-        //     if (!Physics.Raycast(ray, out RaycastHit hit, maxPickDistance, followLayerMask, QueryTriggerInteraction.Ignore))
-        //     {
-        //         Debug.LogWarning("[CamFlow] Pick miss: raycast hit nothing.");
-        //         return;
-        //     }
-
-        //     Debug.Log($"[CamFlow] Pick hit: {hit.collider.name} at {hit.point} (root={hit.collider.transform.root.name})");
-
-        //     CamFlowFollowable followable = hit.collider.GetComponentInParent<CamFlowFollowable>();
-        //     if (followable == null)
-        //     {
-        //         Debug.LogWarning("[CamFlow] Pick rejected: hit object has no CamFlowFollowable in parents.");
-        //         return;
-        //     }
-
-        //     if (follower == null)
-        //     {
-        //         Debug.LogWarning("[CamFlow] Pick failed: no CameraTargetFollower on rig / reference not wired.");
-        //         return;
-        //     }
-
-        //     Transform t = followable.FollowTransform != null ? followable.FollowTransform : followable.transform;
-
-        //     follower.SetTarget(t);
-        //     follower.SetEnabled(true);
-
-        //     Debug.Log($"[CamFlow] Pick success: now following {t.name}");
-        // }
-
-
-        public void SetTarget(Transform target)
-        {
-            if (follower == null)
-            {
-                Debug.LogWarning("[CamFlow] No CameraTargetFollower on this rig.", this);
-                return;
-            }
-
-            follower.SetTarget(target);
-            follower.SetEnabled(target != null);
-        }
-
-        public void SetCinematic(bool enabledValue)
-        {
-            cinematicEnabled = enabledValue;
-            motor.CinematicEnabled = enabledValue;
+            return true;
         }
     }
 }

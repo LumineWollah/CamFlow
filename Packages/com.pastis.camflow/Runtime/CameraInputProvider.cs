@@ -149,5 +149,22 @@ namespace Pastis.CamFlow
         public InputAction GetLookAction() => lookAction;
         public InputAction GetZoomAction() => zoomAction;
         public InputAction GetToggleCinematicAction() => toggleCinematicAction;
+
+        public CameraCommand ReadCommand()
+        {
+            return new CameraCommand
+            {
+                planarMove = Move,
+                verticalMove = VerticalMove,
+                lookDelta = LookDelta,
+                zoomDelta = ZoomDelta,
+                fast = Fast,
+                slow = Slow,
+                toggleCinematic = ConsumeToggleCinematicPressed(),
+                requestFollow = false,
+                followTarget = null,
+                clearFollow = false
+            };
+        }
     }
 }

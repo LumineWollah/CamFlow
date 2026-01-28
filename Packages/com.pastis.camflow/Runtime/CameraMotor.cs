@@ -3,8 +3,8 @@ using UnityEngine;
 namespace Pastis.CamFlow
 {
     /// <summary>
-    /// Applies translation/rotation/zoom to a rig (Transform).
-    /// Put this on the same object you want to move/rotate (often the Camera or a parent rig).
+    /// Applies translation, rotation and zoom to a camera rig.
+    /// Driven by CameraCommand (virtualized input).
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CameraMotor : MonoBehaviour
@@ -15,14 +15,14 @@ namespace Pastis.CamFlow
         [SerializeField] private float slowMultiplier = 0.35f;
 
         [Header("Rotation")]
-        [SerializeField] private float yawSpeed = 0.15f;   // degrees per pixel-ish (scaled)
+        [SerializeField] private float yawSpeed = 0.15f;
         [SerializeField] private float pitchSpeed = 0.15f;
         [SerializeField] private float minPitch = -80f;
         [SerializeField] private float maxPitch = 80f;
 
-        [Header("Zoom")]
+        [Header("Zoom (FOV)")]
         [SerializeField] private Camera targetCamera;
-        [SerializeField] private float zoomSpeed = 2f; // FOV step per scroll unit
+        [SerializeField] private float zoomSpeed = 2f;
         [SerializeField] private float minFov = 20f;
         [SerializeField] private float maxFov = 80f;
 
@@ -32,19 +32,17 @@ namespace Pastis.CamFlow
         [SerializeField] private float fovSmoothTime = 0.08f;
 
         public bool CinematicEnabled { get; set; } = true;
+        public Camera TargetCamera => targetCamera;
 
         private Vector3 desiredPosition;
-        private Vector3 positionVelocity;
-
         private Quaternion desiredRotation;
-        private float rotationVelocity; // for SmoothDampAngle-based yaw/pitch
+        private float desiredFov;
+
+        private Vector3 positionVelocity;
+        private float fovVelocity;
+
         private float desiredYaw;
         private float desiredPitch;
-
-        private float desiredFov;
-        private float fovVelocity;
-        
-        public Camera TargetCamera => targetCamera;
 
         private void Reset()
         {
@@ -53,11 +51,13 @@ namespace Pastis.CamFlow
 
         private void Awake()
         {
-            if (targetCamera == null) targetCamera = GetComponentInChildren<Camera>();
+            if (targetCamera == null)
+                targetCamera = GetComponentInChildren<Camera>();
+
             desiredPosition = transform.position;
             desiredRotation = transform.rotation;
 
-            var euler = transform.rotation.eulerAngles;
+            Vector3 euler = transform.rotation.eulerAngles;
             desiredYaw = euler.y;
             desiredPitch = NormalizePitch(euler.x);
 
@@ -65,42 +65,46 @@ namespace Pastis.CamFlow
                 desiredFov = targetCamera.fieldOfView;
         }
 
-        public void TickFree(float dt, CameraInputProvider input)
+        /// <summary>
+        /// Free camera movement driven by a CameraCommand.
+        /// </summary>
+        public void TickFree(float dt, in CameraCommand cmd)
         {
-            // Translation in local XZ plane (world up)
-            Vector2 move = input.Move;
-float vertical = input.VerticalMove;
             float speed = moveSpeed;
-            if (input.Fast) speed *= fastMultiplier;
-            if (input.Slow) speed *= slowMultiplier;
+            if (cmd.fast) speed *= fastMultiplier;
+            if (cmd.slow) speed *= slowMultiplier;
 
             Vector3 right = transform.right;
             Vector3 forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
 
-            desiredPosition += (right * move.x + forward * move.y) * (speed * dt);
-            desiredPosition += Vector3.up * (vertical * speed * dt); 
+            desiredPosition +=
+                (right * cmd.planarMove.x +
+                 forward * cmd.planarMove.y +
+                 Vector3.up * cmd.verticalMove) * (speed * dt);
 
             // Rotation
-            Vector2 look = input.LookDelta;
-            desiredYaw += look.x * yawSpeed;
-            desiredPitch -= look.y * pitchSpeed;
+            desiredYaw += cmd.lookDelta.x * yawSpeed;
+            desiredPitch -= cmd.lookDelta.y * pitchSpeed;
             desiredPitch = Mathf.Clamp(desiredPitch, minPitch, maxPitch);
 
             desiredRotation = Quaternion.Euler(desiredPitch, desiredYaw, 0f);
 
-            // Zoom (FOV)
-            if (targetCamera != null)
+            // Zoom
+            if (targetCamera != null && Mathf.Abs(cmd.zoomDelta) > 0.001f)
             {
-                float zoom = input.ZoomDelta;
-                if (Mathf.Abs(zoom) > 0.001f)
-                {
-                    desiredFov = Mathf.Clamp(desiredFov - zoom * zoomSpeed, minFov, maxFov);
-                }
+                desiredFov = Mathf.Clamp(
+                    desiredFov - cmd.zoomDelta * zoomSpeed,
+                    minFov,
+                    maxFov
+                );
             }
 
             Apply(dt);
         }
 
+        /// <summary>
+        /// Follow mode: motor is directly driven by an external system (follower).
+        /// </summary>
         public void TickFollow(float dt, Vector3 followPosition, Quaternion followRotation, float? followFov = null)
         {
             desiredPosition = followPosition;
@@ -117,26 +121,43 @@ float vertical = input.VerticalMove;
             if (!CinematicEnabled)
             {
                 transform.SetPositionAndRotation(desiredPosition, desiredRotation);
-                if (targetCamera != null) targetCamera.fieldOfView = desiredFov;
+                if (targetCamera != null)
+                    targetCamera.fieldOfView = desiredFov;
                 return;
             }
 
-            transform.position = Vector3.SmoothDamp(transform.position, desiredPosition, ref positionVelocity, positionSmoothTime, Mathf.Infinity, dt);
+            // Position smoothing
+            transform.position = Vector3.SmoothDamp(
+                transform.position,
+                desiredPosition,
+                ref positionVelocity,
+                positionSmoothTime,
+                Mathf.Infinity,
+                dt
+            );
 
-            // Smooth rotation directly towards desiredRotation (works for both Free and Follow)
+            // Rotation smoothing (Quaternion-based, works for LookAt & moving targets)
             float rotT = 1f - Mathf.Exp(-dt / Mathf.Max(0.0001f, rotationSmoothTime));
             transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, rotT);
 
-
+            // FOV smoothing
             if (targetCamera != null)
             {
-                targetCamera.fieldOfView = Mathf.SmoothDamp(targetCamera.fieldOfView, desiredFov, ref fovVelocity, fovSmoothTime, Mathf.Infinity, dt);
+                targetCamera.fieldOfView = Mathf.SmoothDamp(
+                    targetCamera.fieldOfView,
+                    desiredFov,
+                    ref fovVelocity,
+                    fovSmoothTime,
+                    Mathf.Infinity,
+                    dt
+                );
             }
         }
 
         public void ClampPosition(CameraBounds bounds)
         {
             desiredPosition = bounds.Clamp(desiredPosition);
+
             if (!CinematicEnabled)
                 transform.position = desiredPosition;
         }
