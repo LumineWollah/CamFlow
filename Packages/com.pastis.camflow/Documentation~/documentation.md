@@ -47,22 +47,15 @@ Ce package s'installe via le Unity Package Manager (UPM).
 
 Suivez ces étapes pour configurer la caméra :
 
-### 1. Créer un Rig Caméra
-- Créez un objet vide nommé `CameraRig`.
-- Placez votre `Main Camera` en tant qu'enfant de ce `CameraRig`.
-- Réinitialisez la position de la caméra locale à `(0, 0, 0)` (ou ajustez selon vos besoins).
-
-### 2. Ajouter les composants
-- Sélectionnez `CameraRig`.
-- Ajoutez le composant `CameraController`.
+### 1. Ajouter les composants à la main camera
+- Sélectionnez `Main camera`.
+- Ajoutez les composants `CameraController`, `CameraMotor`, `CameraInputProvider`, (optional)`CameraTargetFollower`.
 
 <p align="center">
     <img src="Images/camera_controller.png" width="500" alt="Camera Controller Inspector">
     <br>
     <em>Le composant principal CameraController</em>
 </p>
-
-- Unity ajoutera automatiquement les dépendances (`CameraMotor`, `CameraInputProvider`, `CameraTargetFollower`, `CameraBounds`).
 
 | **Camera Motor** & **Input Provider** |
 | :---: |
@@ -72,11 +65,11 @@ Suivez ces étapes pour configurer la caméra :
 | :---: |
 | <img src="Images/camera_target_follower.png" width="35%" alt="Target Follower"> <img src="Images/camera_bound.png" width="35%" alt="Camera Bounds"> |
 
-### 3. Configurer
-- Sur `CameraMotor`, assurez-vous que `Target Camera` pointe bien vers votre caméra enfant.
+### 2. Configurer
+- Sur `CameraMotor`, assurez-vous que `Target Camera` pointe bien vers `Main Camera`.
 - Sur `CameraInputProvider`, les contrôles par défaut sont déjà actifs.
 
-### 4. Jouer
+### 3. Jouer
 Lancez la scène. Vous pouvez maintenant voler librement.
 
 ---
