@@ -174,7 +174,7 @@ public class GroupCameraController : MonoBehaviour
 
 ### Intégration dans une scène de démo
 
-Dans les scènes d’exemple, le suivi de groupe peut être activé via une interface utilisateur afin de démontrer son intégration dans un contexte réel.
+Dans la scène d’exemple, le suivi de groupe peut être activé via une interface utilisateur afin de démontrer son intégration dans un contexte réel.
 
 - Un bouton UI déclenche l’appel à `SetTargetGroup(...)`
 - Un second clic sur le même bouton appelle `ClearTargetGroup()`
@@ -292,6 +292,6 @@ Un seul driver peut contrôler la caméra à un instant donné.
 
 CamFlow fournit :
 - Une caméra libre de type RTS / free-fly
-- Un suivi de cible fluide avec orbit
+- Un suivi de cible(s) fluide avec orbit
 - Des limites de déplacement configurables
 - Un système de contrôle de caméra scriptable et extensible
