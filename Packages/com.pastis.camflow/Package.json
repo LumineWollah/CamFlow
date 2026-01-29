@@ -13,8 +13,8 @@
   "samples": [
     {
       "displayName": "Demo Scene",
-      "description": "Minimal setup instructions for CamFlow.",
-      "path": "Assets/Scenes/SampleScene.unity"
+      "description": "Minimal demo scene for CamFlow.",
+      "path": "Samples~/DemoScene"
     }
   ],
   "documentationUrl": "https://github.com/LumineWollah/CamFlow/blob/main/Packages/com.pastis.camflow/Documentation~/documentation.md"
