@@ -13,6 +13,21 @@ Le package contient les éléments suivants :
 
 ---
 
+## Fonctionnalités
+
+| Fonctionnalités principales |
+|-----------------------------|
+| Déplacement libre           |
+| Tracking d'objet            |
+| Zone définie de déplacement |
+| Interfaçage du Controller   |
+
+### Fonctionnalités secondaires
+- Mode cinématique (mouvements fluides)
+- Suivi de groupes d'objets
+- Zoom
+
+---
 ## Instructions d'installation
 
 Ce package s'installe via le Unity Package Manager (UPM).
