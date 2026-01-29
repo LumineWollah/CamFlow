@@ -59,17 +59,17 @@ This package aims to provide a **standardized, modular, and reusable foundation*
 | -------- |
 | Free camera movement |
 | Target following |
-| Defined movement area |
+| Command camera system for advanced virtualization |
 | Smooth camera motion |
 
 ---
 
 ## Secondary Features (Nice-to-have)
-- Camera command system pour advanded virtualization.
-- Modular architecture allowing easy component replacement.
+- Defined movement area
+- Target group functionality
 - Zoom functionality
 
----
+--- 
 
 ## Non-Goals
 - Fully replacing Cinemachine  
