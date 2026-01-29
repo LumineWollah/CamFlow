@@ -130,8 +130,15 @@ This package aims to provide a **standardized, modular, and reusable foundation*
 
 ---
 
-## Expected Deliverables
+## Deliverables
 - Unity package installable via UPM
 - README and documentation
-- Example scenes
-- One-pager (this document)
+- Sample scene
+
+---
+
+# How to install
+
+In a Unity Project:
+- Window > Package Management > Package Manager
+- Click "+" > "Install package from git URL..." > Enter https://github.com/LumineWollah/CamFlow.git?path=Packages/com.pastis.camflow
